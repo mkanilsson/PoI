@@ -1,0 +1,10 @@
+name: PoI
+version: '${project.version}'
+main: me.Jrp0h.poi.PoI
+api-version: 1.17
+
+commands:
+  poihelp:
+  poiadd:
+  poilist:
+  poi:
