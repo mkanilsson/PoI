@@ -4,6 +4,8 @@ import java.util.UUID
 import me.Jrp0h.poi.AddCoord.Category
 import me.Jrp0h.poi.AddCoord.Step
 import me.Jrp0h.poi.AddCoord.World
+import me.Jrp0h.poi.database.DatabaseManager
+import me.Jrp0h.poi.models.PointsOfInterest
 import me.Jrp0h.poi.utils.Compare
 import me.Jrp0h.poi.utils.Logger
 import org.bukkit.ChatColor
@@ -20,6 +22,11 @@ class PoI : JavaPlugin(), Listener {
     val addCoords = HashMap<UUID, AddCoord>()
 
     val categories = AddCoord.Category.Misc
+
+    override fun onLoad() {
+        Config.load(this)
+        DatabaseManager.connect(this)
+    }
 
     override fun onEnable() {
         this.getServer().getPluginManager().registerEvents(this, this)
@@ -39,6 +46,10 @@ class PoI : JavaPlugin(), Listener {
         }
         if (Compare.ignoreCase(label, "poiadd")) {
             if (sender is Player) return cmdAdd(sender)
+            return true
+        }
+        if (Compare.ignoreCase(label, "poi")) {
+            if (sender is Player) return cmdPoi(sender, cmd, label, args)
             return true
         }
 
@@ -162,7 +173,7 @@ class PoI : JavaPlugin(), Listener {
                                 builder.clear()
                                 builder.append(ChatColor.RED)
                                         .append(
-                                                "Something when wrong, type something in chat to try again. You can type cancel to cancel."
+                                                "Something went wrong, type something in chat to try again. You can type cancel to cancel."
                                         )
                                 player.sendMessage(builder.toString())
                                 coord.setFailed()
@@ -193,7 +204,7 @@ class PoI : JavaPlugin(), Listener {
                             builder.clear()
                             builder.append(ChatColor.RED)
                                     .append(
-                                            "Something when wrong, type something in chat to try again. You can type cancel to cancel."
+                                            "Something went wrong, type something in chat to try again. You can type cancel to cancel."
                                     )
                             coord.setFailed()
                         }
@@ -278,6 +289,114 @@ class PoI : JavaPlugin(), Listener {
         val builder = StringBuilder()
         builder.append(ChatColor.BLUE).append("").append("Please enter a name!")
         player.sendMessage(builder.toString())
+        return true
+    }
+
+    fun cmdPoi(player: Player, cmd: Command, label: String, args: Array<String>): Boolean {
+        val location = player.getLocation()
+
+        val x: Int = location.getX().toInt()
+        val y: Int = location.getY().toInt()
+        val z: Int = location.getZ().toInt()
+
+        var category: Category? = null
+        var page = 0
+
+        var world: World
+
+        val minecraftWorld = location.getWorld()
+        if (minecraftWorld != null) {
+            val wfs = AddCoord.worldFromString(minecraftWorld.getName())
+            if (wfs == null) {
+                val builder = StringBuilder()
+                builder.append(ChatColor.RED)
+                        .append("")
+                        .append("Something went wrong: Cound not find world from string")
+
+                player.sendMessage(builder.toString())
+
+                Logger.error("Could not find world from string")
+                return true
+            } else world = wfs
+        } else {
+            val builder = StringBuilder()
+            builder.append(ChatColor.RED)
+                    .append("")
+                    .append("Something went wrong: Cound not find world")
+
+            player.sendMessage(builder.toString())
+
+            Logger.error("Could not find minecraft world")
+            return true
+        }
+
+        val rx = Regex("^[A-Za-z]+=[A-Za-z0-9]+$")
+        args.forEach { arg ->
+            if (rx.matches(arg)) {
+                val option_value = arg.split("=")
+                val option = option_value[0]
+                val value = option_value[1]
+
+                if (Compare.ignoreCase(option, "category") || Compare.ignoreCase(option, "c")) {
+                    val v = value.toIntOrNull()
+                    if (v == null) {
+                        val builder = StringBuilder()
+                        builder.append(ChatColor.RED)
+                                .append("")
+                                .append("Category must be a number. See /poilist")
+                        player.sendMessage(builder.toString())
+                        return true
+                    }
+                    category = AddCoord.categoryFromInt(v)
+                    Logger.info("Category:", category.toString())
+                } else if (Compare.ignoreCase(option, "page") || Compare.ignoreCase(option, "p")) {
+                    val v = value.toIntOrNull()
+                    if (v == null) {
+                        val builder = StringBuilder()
+                        builder.append(ChatColor.RED).append("").append("Page must be a number.")
+                        player.sendMessage(builder.toString())
+                        return true
+                    }
+                    page = v
+                } else {
+                    Logger.warning("Unknown command:", option, ",", value)
+                }
+            }
+        }
+
+        val result = PointsOfInterest.getPointsOfInterest(x, y, z, world, page, category)
+
+        val pois = result.second
+
+        pois.forEachIndexed { i, poi ->
+            val builder = StringBuilder()
+            builder.append(ChatColor.YELLOW)
+                    .append(i + 1)
+                    .append(" - ")
+                    .append(poi.name)
+                    .append("\n")
+            builder.append(ChatColor.AQUA).append(poi.distance).append(" blocks away").append("\n")
+            builder.append(ChatColor.GRAY)
+                    .append(AddCoord.categoryToString(poi.category))
+                    .append(", X: ")
+                    .append(poi.x)
+                    .append(", Y:")
+                    .append(poi.y)
+                    .append(", Z:")
+                    .append(poi.z)
+                    .append("\n")
+            player.sendMessage(builder.toString())
+        }
+
+        if (result.first) {
+            val builder = StringBuilder()
+            builder.append(ChatColor.GRAY)
+                    .append(
+                            "\nTheir are more coordinate that meet your criteria use page=<number> to go to another page\nExample: /poi page=2"
+                    )
+            player.sendMessage(builder.toString())
+        }
+
         return true
     }
 }

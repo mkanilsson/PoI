@@ -6,8 +6,11 @@ import org.bukkit.ChatColor
 object Logger {
     val PREFIX: String = "[Places of Interest]"
 
-    private fun log(color: ChatColor, msg: String, vararg rest: String) {
-        Bukkit.getConsoleSender().sendMessage("$PREFIX${color} $msg", *rest)
+    private fun log(color: ChatColor, vararg rest: String) {
+        val builder = StringBuilder()
+        rest.forEach { message -> builder.append(" ").append(message) }
+        val message = builder.toString()
+        Bukkit.getConsoleSender().sendMessage("$PREFIX${color}$message")
     }
 
     fun info(msg: String, vararg rest: String) {

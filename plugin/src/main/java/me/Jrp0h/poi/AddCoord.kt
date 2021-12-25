@@ -1,5 +1,6 @@
 package me.Jrp0h.poi
 
+import me.Jrp0h.poi.models.PointsOfInterest
 import me.Jrp0h.poi.utils.Compare
 
 class AddCoord {
@@ -27,6 +28,32 @@ class AddCoord {
                 Category.MushroomIsland -> return "Mushroom Island"
                 Category.NetherFortress -> return "Nether Fortress"
                 else -> return category.toString()
+            }
+        }
+
+        public fun categoryFromInt(value: Int): Category? {
+            when (value) {
+                1 -> return Category.Home
+                2 -> return Category.Spawner
+                3 -> return Category.Farm
+                4 -> return Category.Village
+                5 -> return Category.Stronghold
+                6 -> return Category.DesertTemple
+                7 -> return Category.JungleTemple
+                8 -> return Category.GuardianTemple
+                9 -> return Category.OceanRuins
+                10 -> return Category.Mineshaft
+                11 -> return Category.PillagerOutpost
+                12 -> return Category.Shipwreck
+                13 -> return Category.Biome
+                14 -> return Category.EndPortal
+                15 -> return Category.NetherPortal
+                16 -> return Category.Bastion
+                17 -> return Category.NetherFortress
+                18 -> return Category.Mansion
+                19 -> return Category.MushroomIsland
+                20 -> return Category.Misc
+                else -> return null
             }
         }
     }
@@ -143,6 +170,6 @@ class AddCoord {
     }
 
     fun save(): Boolean {
-        return true
+        return PointsOfInterest.addCoord(this)
     }
 }
